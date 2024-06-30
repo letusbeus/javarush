@@ -44,3 +44,7 @@ build/
 
 ### Non-public data ###
 /src/main/java/com/javarush/telegram/Data.java
+/src/main/java/com/javarush/telegram/javarush_homework_one.png
+/src/main/java/com/javarush/telegram/javarush_homework_two.png
+/src/main/java/com/javarush/telegram/javarush_homework_three.png
+/src/main/java/com/javarush/telegram/javarush_homework_four.png
