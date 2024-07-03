@@ -18,6 +18,7 @@ public class TinderBoltApp extends MultiSessionTelegramBot {
 
     private ChatGPTService chatGPT = new ChatGPTService(OPEN_AI_TOKEN);
     private DialogMode currentMode = null;
+    private ArrayList<String> list = new ArrayList<>();
 
     public TinderBoltApp() {
         super(TELEGRAM_BOT_NAME, TELEGRAM_BOT_TOKEN);
@@ -33,11 +34,11 @@ public class TinderBoltApp extends MultiSessionTelegramBot {
             sendPhotoMessage("main");
             String text = loadMessage("main");
             sendTextMessage(text);
-
             showMainMenu(Data.MAIN_MENU_COMMANDS); // вынесены в отдельный файл
             return;
         }
 
+        // command GPT
         if (message.equals("/gpt")) {
             currentMode = DialogMode.GPT;
             sendPhotoMessage("gpt");
@@ -48,8 +49,59 @@ public class TinderBoltApp extends MultiSessionTelegramBot {
 
         if (currentMode == DialogMode.GPT) {
             String prompt = loadPrompt("gpt");
+            Message msg = sendTextMessage("_Подождите пару секунд - ChatGPT думает..._");
             String answer = chatGPT.sendMessage(prompt, message);
-            sendTextMessage(answer);
+            updateTextMessage(msg, answer);
+            return;
+        }
+
+        // command DATE
+        if (message.equals("/date")) {
+            currentMode = DialogMode.DATE;
+            sendPhotoMessage("date");
+            String text = loadMessage("date");
+            sendTextButtonsMessage(text, Data.DATE_BUTTONS);
+            return;
+        }
+
+        if (currentMode == DialogMode.DATE) {
+            String query = getCallbackQueryButtonKey();
+            if (query.startsWith("date_")) {
+                sendPhotoMessage(query);
+                sendTextMessage("Отличный выбор!\nПригласите вашего партнера на свидание за 5 сообщений :)");
+
+                String prompt = loadPrompt(query);
+                chatGPT.setPrompt(prompt);
+                return;
+            }
+
+            Message msg = sendTextMessage("_Подождите пару секунд, Ваш собеседник набирает ответ..._");
+            String answer = chatGPT.addMessage(message);
+            updateTextMessage(msg, answer);
+            return;
+        }
+
+        // command MESSAGE
+        if (message.equals("/message")) {
+            currentMode = DialogMode.MESSAGE;
+            sendPhotoMessage("message");
+            sendTextButtonsMessage("Пришлите в чат вашу переписку",
+                    "Следующее сообщение", "message_next",
+                    "Пригласить на свидание", "message_date");
+            return;
+        }
+
+        if (currentMode == DialogMode.MESSAGE) {
+            String query = getCallbackQueryButtonKey();
+            if (query.startsWith("message_")) {
+                String prompt = loadPrompt(query);
+                String userChatHistory = String.join("\n\n", list);
+                Message msg = sendTextMessage("_Подождите пару секунд - ChatGPT думает..._");
+                String answer = chatGPT.sendMessage(prompt, userChatHistory);
+                updateTextMessage(msg, answer);
+                return;
+            }
+            list.add(message);
             return;
         }
 
